@@ -60,10 +60,10 @@ test('Test slow', async ({page}) => {
   await successButton.click()
 });
 
-test.only('Test suite timeout', async ({page}, testInfo) => {
+test('Test suite timeout', async ({page}, testInfo) => {
   //__ mark test suit - increase timeout
   const successButton = page.locator('.bg-success');
   await successButton.click()
-  testInfo.setTimeout(testInfo.timeout() + 2000);
+  testInfo.setTimeout(testInfo.timeout + 2000);
 });
 
