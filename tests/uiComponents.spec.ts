@@ -138,8 +138,8 @@ test.describe('Form Layout page', () => {
     // get the row by any text in the row
     const targetRow = page.getByRole('row', {name: 'twitter@outlook.com'});
     await targetRow.locator('.nb-edit').click();
-    await  page.locator('input-editor').getByPlaceholder('Age').clear();
-    await  page.locator('input-editor').getByPlaceholder('Age').fill('35');
+    await page.locator('input-editor').getByPlaceholder('Age').clear();
+    await page.locator('input-editor').getByPlaceholder('Age').fill('35');
     await page.locator('.nb-checkmark').click();
 
     //2 get the row based on the value in the specific column
@@ -147,8 +147,8 @@ test.describe('Form Layout page', () => {
     const targetRowById = page.getByRole('row', {name: '11'})
       .filter({has: page.locator('td').nth(1).getByText('11')});
     await targetRowById.locator('.nb-edit').click();
-    await  page.locator('input-editor').getByPlaceholder('E-mail').clear();
-    await  page.locator('input-editor').getByPlaceholder('E-mail').fill('test@test.com');
+    await page.locator('input-editor').getByPlaceholder('E-mail').clear();
+    await page.locator('input-editor').getByPlaceholder('E-mail').fill('test@test.com');
     await page.locator('.nb-checkmark').click();
     await expect(targetRowById.locator('td').nth(5)).toHaveText('test@test.com');
   });
@@ -161,19 +161,88 @@ test.describe('Form Layout page', () => {
     const ages = ["20", "30", "40", "200"];
 
     for (let age of ages) {
-      await  page.locator('input-filter').getByPlaceholder('Age').clear();
-      await  page.locator('input-filter').getByPlaceholder('Age').fill(age);
+      await page.locator('input-filter').getByPlaceholder('Age').clear();
+      await page.locator('input-filter').getByPlaceholder('Age').fill(age);
       await page.waitForTimeout(500); // wait for the table to refresh
       const ageRows = page.locator('tbody tr');
 
-       for(let row of await ageRows.all()) {
-         const celValue = await row.locator('td').last().textContent();
+      for (let row of await ageRows.all()) {
+        const celValue = await row.locator('td').last().textContent();
 
-         expect(celValue).toContain(age);
-
-         }
+        if (age == "200") {
+          expect(await page.getByRole('table').textContent()).toContain('No data found');
+        } else {
+          expect(celValue).toContain(age);
+        }
+      }
     }
   });
 
+  test('Date Picker - option 1', async ({page}) => {
+    await page.getByText('Forms').click();
+    await page.getByText('Datepicker').click();
+    const calendarInputField = page.getByPlaceholder('Form Picker');
+    await calendarInputField.click();
+    // method 1 - not recommended - because it may fail if the month is different
+    await page.locator('[class="day-cell ng-star-inserted"]').getByText('19', {exact: true}).click();
+    await expect(calendarInputField).toHaveValue('Sep 19, 2025');
 
+  });
+
+  test('Date Picker - option 2  using Date()', async ({page}) => {
+    await page.getByText('Forms').click();
+    await page.getByText('Datepicker').click();
+    const calendarInputField = page.getByPlaceholder('Form Picker');
+    await calendarInputField.click();
+
+    // method 2 - recommended
+    let date = new Date();
+    date.setDate(date.getDate() + 1);
+    const expectedMonthShort = date.toLocaleString('En-US', {month: 'short'});
+    const expectedMonthLong = date.toLocaleString('En-US', {month: 'long'});
+    const expectedDate = date.getDate().toString();
+    const expectedYear = date.getFullYear().toString();
+    let calenderMonthAndYear = await page.locator('nb-calendar-view-mode').textContent();
+    const expectedMonthAndYear = `${expectedMonthLong} ${expectedYear}`;
+
+    // example one - concatenation
+    const dateToAssert = expectedMonthShort + ' ' + expectedDate + ', ' + expectedYear;
+    // example two - template string
+    const dateToAssertTwo = `${expectedMonthShort} ${expectedDate}, ${expectedYear}`;
+    // select the month and year in the calendar
+    while (!calenderMonthAndYear.includes(expectedMonthAndYear)) {
+      await page.locator('nb-calendar-pageable-navigation [data-name="chevron-right"]').click();
+      calenderMonthAndYear = await page.locator('nb-calendar-view-mode').textContent();
+    }
+
+    await page.locator('[class="day-cell ng-star-inserted"]').getByText(expectedDate, {exact: true}).click();
+    await expect(calendarInputField).toHaveValue(dateToAssertTwo);
+  });
+
+  test('Sliders', async ({page}) => {
+    await page.getByText('IoT Dashboard').click();
+
+    const tempGage = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger circle');
+    await tempGage.evaluate(node => {
+      node.setAttribute('cx', '77.492')
+      node.setAttribute('cy', '24.874')
+    })
+    await tempGage.click(); // have to use .click() to trigger the change event
+
+    // actual mouse movement
+    const tempBox = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger');
+    await tempBox.scrollIntoViewIfNeeded()
+
+    // starting point of the circle - center of the circle
+    const box = await tempBox.boundingBox();
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 100, y );
+    await page.mouse.move(y + 100, y + 100 );
+    await page.mouse.up();
+
+    await expect(tempBox).toContainText('29')
+  });
 })
