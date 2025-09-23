@@ -1,30 +1,39 @@
-import {test, expect} from "@playwright/test";
-import {NavigationPage} from "../page-objects/navigationPage";
-import {FormLayoutsPage} from "../page-objects/formLayoutsPage";
+import {test} from "@playwright/test";
+import {PageManager} from "../page-objects/pageManager";
 
 test.beforeEach(async ({page}) => {
-  await page.goto('http://localhost:4200/');
+    await page.goto('http://localhost:4200/');
 });
 
 test('Navigate to form page', async ({page}) => {
-  const navigateTo = new NavigationPage(page);
-  await navigateTo.formLayoutPage();
-  await navigateTo.datePickerPage();
-  await navigateTo.smartTablePage();
-  await navigateTo.toastPage();
-  await navigateTo.tooltipPage();
+    const pm = new PageManager(page);
+    await pm.navigateTo().formLayoutPage();
+    await pm.navigateTo().datePickerPage();
+    await pm.navigateTo().smartTablePage();
+    await pm.navigateTo().toastPage();
+    await pm.navigateTo().tooltipPage();
 })
 
 test('Parameterized methods', async ({page}) => {
-  const navigateTo = new NavigationPage(page);
-  const formLayoutsPage = new FormLayoutsPage(page);
-  await navigateTo.formLayoutPage()
-  await formLayoutsPage.submitUsingTheGridFormWithCredentialsAndSelectOption("test@teste.com", "teste123", "Option 2");
+    const pm = new PageManager(page);
+    await pm.navigateTo().formLayoutPage()
+    await pm.onFormLayoutsPage().submitUsingTheGridFormWithCredentialsAndSelectOption("test@teste.com", "teste123", "Option 2");
 })
 
 test('Parameterized methods with booleans (check box selection)', async ({page}) => {
-  const navigateTo = new NavigationPage(page);
-  const formLayoutsPage = new FormLayoutsPage(page);
-  await navigateTo.formLayoutPage()
-  await formLayoutsPage.submitInlineFormWithNameEmailAndCheckbox("Jame Doe", "test@test.com", true)
+    const pm = new PageManager(page);
+    await pm.navigateTo().formLayoutPage()
+    await pm.onFormLayoutsPage().submitInlineFormWithNameEmailAndCheckbox("Jame Doe", "test@test.com", true)
 })
+
+test('Parameterized methods - Datepicker test - Common Datepicker', async ({page}) => {
+    const pm = new PageManager(page);
+    await pm.navigateTo().datePickerPage()
+    await pm.onDatePickerPage().selectCommonDatePickerDateFomToday(5)
+});
+
+test('Parameterized methods - Datepicker test - Datepicker with Range', async ({page}) => {
+    const pm = new PageManager(page);
+    await pm.navigateTo().datePickerPage()
+    await pm.onDatePickerPage().selectDatePickerWithRangeFromToday(6, 15)
+});
